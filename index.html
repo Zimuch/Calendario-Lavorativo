@@ -421,6 +421,17 @@
             flex-grow: 1;
         }
 
+        .domenica-badge {
+            display: inline-block;
+            background: var(--color-warning);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
         @media (max-width: 768px) {
             .controls {
                 grid-template-columns: 1fr;
@@ -474,7 +485,7 @@
         </div>
 
         <div class="shift-panel">
-            <h2 style="margin-top: 0; color: var(--color-primary);">Dettagli Turno</h2>
+            <h2 style="margin-top: 0; color: var(--color-primary);">Dettagli Turno <span id="domenicarBadge"></span></h2>
             <div id="selectedDayInfo" style="color: var(--color-text-light); margin-bottom: 15px;">Seleziona un giorno per modificare il turno</div>
 
             <div class="shift-form" id="shiftForm" style="display: none;">
@@ -504,7 +515,7 @@
 
             <div class="shift-details" id="shiftDetails" style="display: none;">
                 <div class="stat-box">
-                    <div class="stat-label">Paga Base</div>
+                    <div class="stat-label">Paga Base <span id="domenicarLabel"></span></div>
                     <div class="stat-value" id="basePay">€0.00</div>
                 </div>
                 <div class="stat-box success">
@@ -658,7 +669,7 @@
                             <div class="day-shift"><strong>Inizio:</strong> ${shift.startTime || '-'}</div>
                             <div class="day-shift"><strong>Fine:</strong> ${shift.endTime || '-'}</div>
                             <div class="day-shift"><strong>Ore:</strong> ${shift.hours || 0}h</div>
-                            <div class="day-shift"><strong>Totale:</strong> €${this.calculateDayTotal(shift).toFixed(2)}</div>
+                            <div class="day-shift"><strong>Totale:</strong> €${this.calculateDayTotal(shift, dateStr).toFixed(2)}</div>
                         ` : '<div class="day-shift" style="color: var(--color-text-light);">Nessun turno</div>'}
                     `;
                     card.onclick = () => this.selectDay(dateStr);
@@ -673,14 +684,29 @@
                 return `${year}-${month}-${day}`;
             },
 
+            isDomenica(dateStr) {
+                const [year, month, day] = dateStr.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
+                return date.getDay() === 0;
+            },
+
             selectDay(dateStr) {
                 this.selectedDate = dateStr;
                 const shift = this.shifts[dateStr] || {};
                 const [year, month, day] = dateStr.split('-').map(Number);
                 const date = new Date(year, month - 1, day);
+                const isDomenica = this.isDomenica(dateStr);
 
                 document.getElementById('selectedDayInfo').innerHTML = 
                     `<strong>${date.toLocaleDateString('it-IT', { weekday: 'long' })}, ${date.toLocaleDateString('it-IT')}</strong>`;
+
+                if (isDomenica) {
+                    document.getElementById('domenicarBadge').innerHTML = '<span class="domenica-badge">+10% Domenica</span>';
+                    document.getElementById('domenicarLabel').innerHTML = '(+10% domenica)';
+                } else {
+                    document.getElementById('domenicarBadge').innerHTML = '';
+                    document.getElementById('domenicarLabel').innerHTML = '';
+                }
 
                 document.getElementById('shiftStart').value = shift.startTime || '';
                 document.getElementById('shiftEnd').value = shift.endTime || '';
@@ -732,10 +758,11 @@
                     </div>
                     <div class="bonus-item">
                         <label>Tipo</label>
-                        <select class="overtime-type-select" value="${type}">
-                            <option value="domenicale">Domenicale (+10%)</option>
-                            <option value="notturno">Notturno (+20%)</option>
-                            <option value="festivo">Festivo (+80%)</option>
+                        <select class="overtime-type-select">
+                            <option value="domenicale" ${type === 'domenicale' ? 'selected' : ''}>10%</option>
+                            <option value="notturno" ${type === 'notturno' ? 'selected' : ''}>20%</option>
+                            <option value="aggiuntivo" ${type === 'aggiuntivo' ? 'selected' : ''}>30%</option>
+                            <option value="festivo" ${type === 'festivo' ? 'selected' : ''}>80%</option>
                         </select>
                     </div>
                     <button type="button" class="btn-remove-overtime" onclick="app.removeOvertimeRow(this)" style="background: var(--color-error); padding: 10px 15px; color: white; border: none; cursor: pointer; border-radius: var(--radius); font-weight: 600;">🗑️</button>
@@ -754,22 +781,28 @@
                 this.updateCalculations();
             },
 
-            calculateDayTotal(shift) {
+            calculateDayTotal(shift, dateStr) {
                 const hourlyRate = parseFloat(shift.hourlyRate) || parseFloat(document.getElementById('hourlyRate').value) || 0;
                 const hours = parseFloat(shift.hours) || 0;
-                const basePay = hours * hourlyRate;
+                
+                const isDomenica = this.isDomenica(dateStr);
+                const domenicarMult = isDomenica ? 1.1 : 1;
+                const basePay = hours * hourlyRate * domenicarMult;
 
                 let totalOvertimePay = 0;
                 if (shift.overtimes && Array.isArray(shift.overtimes)) {
                     shift.overtimes.forEach(overtime => {
                         const overtimeHours = parseFloat(overtime.hours) || 0;
-                        const multipliers = {
-                            'domenicale': 1.1,
-                            'notturno': 1.2,
-                            'festivo': 1.8
+                        const percentages = {
+                            'domenicale': 10,
+                            'notturno': 20,
+                            'aggiuntivo': 30,
+                            'festivo': 80
                         };
-                        const multiplier = multipliers[overtime.type] || 1;
-                        totalOvertimePay += overtimeHours * hourlyRate * multiplier;
+                        const percentage = percentages[overtime.type] || 10;
+                        const basePayForOvertime = hours * hourlyRate * domenicarMult;
+                        const majorazionePer1Ora = (basePayForOvertime * percentage) / 100 / hours;
+                        totalOvertimePay += overtimeHours * majorazionePer1Ora;
                     });
                 }
 
@@ -779,7 +812,10 @@
             updateCalculations() {
                 const hourlyRate = parseFloat(document.getElementById('hourlyRateDay').value) || parseFloat(document.getElementById('hourlyRate').value) || 0;
                 const hours = parseFloat(document.getElementById('hoursWorked').value) || 0;
-                const basePay = hours * hourlyRate;
+                
+                const isDomenica = this.isDomenica(this.selectedDate);
+                const domenicarMult = isDomenica ? 1.1 : 1;
+                const basePay = hours * hourlyRate * domenicarMult;
 
                 let totalOvertimePay = 0;
                 const overtimeInputs = document.querySelectorAll('.overtime-input');
@@ -789,13 +825,16 @@
                     const typeSelect = row.querySelector('.overtime-type-select');
                     const typeValue = typeSelect.value;
                     
-                    const multipliers = {
-                        'domenicale': 1.1,
-                        'notturno': 1.2,
-                        'festivo': 1.8
+                    const percentages = {
+                        'domenicale': 10,
+                        'notturno': 20,
+                        'aggiuntivo': 30,
+                        'festivo': 80
                     };
-                    const multiplier = multipliers[typeValue] || 1;
-                    totalOvertimePay += overtimeHours * hourlyRate * multiplier;
+                    const percentage = percentages[typeValue] || 10;
+                    const basePayForOvertime = hours * hourlyRate * domenicarMult;
+                    const majorazionePer1Ora = (basePayForOvertime * percentage) / 100 / hours;
+                    totalOvertimePay += overtimeHours * majorazionePer1Ora;
                 });
 
                 const dayTotal = basePay + totalOvertimePay;
@@ -849,6 +888,8 @@
                 document.getElementById('shiftDetails').style.display = 'none';
                 document.getElementById('actionButtons').style.display = 'none';
                 document.getElementById('selectedDayInfo').innerHTML = 'Seleziona un giorno per modificare il turno';
+                document.getElementById('domenicarBadge').innerHTML = '';
+                document.getElementById('domenicarLabel').innerHTML = '';
                 document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected'));
             },
 
@@ -865,19 +906,25 @@
                     if (shift) {
                         const hourlyRate = shift.hourlyRate;
                         const hours = shift.hours;
-                        const basePay = hours * hourlyRate;
+                        
+                        const isDomenica = this.isDomenica(dateStr);
+                        const domenicarMult = isDomenica ? 1.1 : 1;
+                        const basePay = hours * hourlyRate * domenicarMult;
 
                         let overtimePay = 0;
                         if (shift.overtimes && Array.isArray(shift.overtimes)) {
                             shift.overtimes.forEach(overtime => {
                                 const overtimeHours = parseFloat(overtime.hours) || 0;
-                                const multipliers = {
-                                    'domenicale': 1.1,
-                                    'notturno': 1.2,
-                                    'festivo': 1.8
+                                const percentages = {
+                                    'domenicale': 10,
+                                    'notturno': 20,
+                                    'aggiuntivo': 30,
+                                    'festivo': 80
                                 };
-                                const multiplier = multipliers[overtime.type] || 1;
-                                overtimePay += overtimeHours * hourlyRate * multiplier;
+                                const percentage = percentages[overtime.type] || 10;
+                                const basePayForOvertime = hours * hourlyRate * domenicarMult;
+                                const majorazionePer1Ora = (basePayForOvertime * percentage) / 100 / hours;
+                                overtimePay += overtimeHours * majorazionePer1Ora;
                             });
                         }
 
@@ -949,20 +996,26 @@
                         const shift = this.shifts[dateStr];
                         const hourlyRate = shift.hourlyRate;
                         const hours = shift.hours;
-                        const basePay = hours * hourlyRate;
+                        
+                        const isDomenica = this.isDomenica(dateStr);
+                        const domenicarMult = isDomenica ? 1.1 : 1;
+                        const basePay = hours * hourlyRate * domenicarMult;
 
                         let overtimePay = 0;
                         let overtimeHours = 0;
                         if (shift.overtimes && Array.isArray(shift.overtimes)) {
                             shift.overtimes.forEach(overtime => {
                                 const hours = parseFloat(overtime.hours) || 0;
-                                const multipliers = {
-                                    'domenicale': 1.1,
-                                    'notturno': 1.2,
-                                    'festivo': 1.8
+                                const percentages = {
+                                    'domenicale': 10,
+                                    'notturno': 20,
+                                    'aggiuntivo': 30,
+                                    'festivo': 80
                                 };
-                                const multiplier = multipliers[overtime.type] || 1;
-                                overtimePay += hours * hourlyRate * multiplier;
+                                const percentage = percentages[overtime.type] || 10;
+                                const basePayForOvertime = shift.hours * hourlyRate * domenicarMult;
+                                const majorazionePer1Ora = (basePayForOvertime * percentage) / 100 / shift.hours;
+                                overtimePay += hours * majorazionePer1Ora;
                                 overtimeHours += hours;
                             });
                         }
@@ -1019,10 +1072,8 @@
                 const currentMonth = this.currentWeekStart.getMonth();
                 const currentYear = this.currentWeekStart.getFullYear();
                 
-                // Crea intestazione CSV
                 let csv = 'Data,Giorno,Inizio Turno,Fine Turno,Ore Lavorate,Paga Oraria,Paga Base,Straordinari,Totale Giorno\n';
                 
-                // Aggiungi dati turni
                 let totalHours = 0, totalBasePay = 0, totalOvertimePay = 0;
                 
                 for (const dateStr in this.shifts) {
@@ -1036,19 +1087,25 @@
                         
                         const shiftHourlyRate = shift.hourlyRate || hourlyRate;
                         const hours = parseFloat(shift.hours) || 0;
-                        const basePay = hours * shiftHourlyRate;
+                        
+                        const isDomenica = this.isDomenica(dateStr);
+                        const domenicarMult = isDomenica ? 1.1 : 1;
+                        const basePay = hours * shiftHourlyRate * domenicarMult;
                         
                         let overtimePay = 0;
                         if (shift.overtimes && Array.isArray(shift.overtimes)) {
                             shift.overtimes.forEach(overtime => {
                                 const overtimeHours = parseFloat(overtime.hours) || 0;
-                                const multipliers = {
-                                    'domenicale': 1.1,
-                                    'notturno': 1.2,
-                                    'festivo': 1.8
+                                const percentages = {
+                                    'domenicale': 10,
+                                    'notturno': 20,
+                                    'aggiuntivo': 30,
+                                    'festivo': 80
                                 };
-                                const multiplier = multipliers[overtime.type] || 1;
-                                overtimePay += overtimeHours * shiftHourlyRate * multiplier;
+                                const percentage = percentages[overtime.type] || 10;
+                                const basePayForOvertime = hours * shiftHourlyRate * domenicarMult;
+                                const majorazionePer1Ora = (basePayForOvertime * percentage) / 100 / hours;
+                                overtimePay += overtimeHours * majorazionePer1Ora;
                             });
                         }
                         
@@ -1057,18 +1114,15 @@
                         totalBasePay += basePay;
                         totalOvertimePay += overtimePay;
                         
-                        // Formatta data
                         const dateFormatted = date.toLocaleDateString('it-IT');
                         csv += `"${dateFormatted}","${dayName}","${shift.startTime || '-'}","${shift.endTime || '-'}",${hours},${shiftHourlyRate.toFixed(2)},${basePay.toFixed(2)},${overtimePay.toFixed(2)},${dayTotal.toFixed(2)}\n`;
                     }
                 }
                 
-                // Aggiungi riga vuota e riepilogo
                 csv += '\n';
                 csv += 'RIEPILOGO MESE,,,,,,,\n';
                 csv += `"Ore Totali","","","",${totalHours.toFixed(1)},"","${totalBasePay.toFixed(2)}","${totalOvertimePay.toFixed(2)}","${(totalBasePay + totalOvertimePay).toFixed(2)}"\n`;
                 
-                // Crea blob e download
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
                 const url = URL.createObjectURL(blob);
