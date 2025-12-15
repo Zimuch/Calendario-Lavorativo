@@ -5,20 +5,17 @@ Italiano
 
 **Calendario Lavorativo** è un progetto nato per semplificare la gestione dei turni e automatizzare il calcolo dello stipendio, offrendo un'alternativa moderna e reattiva ai classici fogli di calcolo.
 
-L'approccio si concentra sull'esperienza utente e sulla precisione dei calcoli economici. L'applicazione permette di tracciare i turni di lavoro distinguendo chiaramente tra ore lavorate effettive e maggiorazioni economiche (straordinari, festivi, notturni). Questa distinzione è fondamentale per evitare errori comuni di conteggio: nel sistema, lo straordinario viene trattato come un "premium" economico che non altera il monte ore lavorativo, garantendo statistiche precise sia sul tempo impiegato che sul guadagno generato.
-
 Il progetto fornisce uno strumento essenziale per lavoratori turnisti, studenti o freelance, permettendo di avere un riscontro immediato dei propri guadagni in tempo reale. Inoltre, la natura di **Progressive Web App (PWA)** consente l'installazione su dispositivi mobili e desktop, garantendo il funzionamento anche in assenza di connessione internet.
 
 L'applicazione utilizza il `localStorage` del browser per la persistenza dei dati, assicurando la privacy dell'utente senza necessità di database esterni o account, e offre funzionalità di esportazione CSV per l'archiviazione mensile.
 
 Gli obiettivi principali sono tre:
 
-1.  Offrire una visione chiara e immediata dei turni settimanali e mensili tramite un'interfaccia visuale.
+1.  Offrire una visione chiara e immediata dei turni settimanali e mensili tramite un'interfaccia grafica.
 2.  Automatizzare il calcolo dello stipendio gestendo variabili complesse come straordinari percentuali e bonus domenicali.
 3.  Garantire la portabilità e la persistenza dei dati in locale, massimizzando la privacy e la velocità d'uso.
 
-Questo progetto è stato sviluppato per dimostrare come le tecnologie web standard possano risolvere problemi quotidiani con efficienza, senza dipendere da framework pesanti.
-
+Questo progetto è stato sviluppato per un uso personale specifico, potrebbe non essere adatto ad altri tipi di usi.
 
 
 ## Autori
@@ -65,8 +62,6 @@ L'applicazione è una **Progressive Web App**. Questo significa che puoi install
 
 **Calendario Lavorativo** (Work Calendar) is a project designed to simplify shift management and automate salary calculations, offering a modern and responsive alternative to traditional spreadsheets.
 
-The approach focuses on user experience and the accuracy of economic calculations. The application allows tracking work shifts by clearly distinguishing between actual hours worked and economic premiums (overtime, holidays, night shifts). This distinction is crucial to avoid common counting errors: in this system, overtime is treated as an economic "premium" that does not alter the total working hours count, ensuring accurate statistics on both time spent and earnings generated.
-
 The project provides an essential tool for shift workers, students, or freelancers, allowing immediate real-time feedback on their earnings. Furthermore, its nature as a **Progressive Web App (PWA)** allows installation on mobile and desktop devices, ensuring operation even without an internet connection.
 
 The application uses the browser's `localStorage` for data persistence, ensuring user privacy without the need for external databases or accounts, and offers CSV export functionality for monthly archiving.
@@ -77,9 +72,7 @@ The objectives are threefold:
 2.  To automate salary calculation by managing complex variables such as percentage-based overtime and Sunday bonuses.
 3.  To ensure local data portability and persistence, maximizing privacy and speed of use.
 
-This project was developed to demonstrate how standard web technologies can efficiently solve everyday problems without relying on heavy frameworks.
-
-
+This project was developed for specific personal use, it may not be suitable for other types of uses.
 
 
 ## Authors
