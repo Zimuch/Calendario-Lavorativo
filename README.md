@@ -124,6 +124,6 @@ The application is a **Progressive Web App**. This means you can install it on y
 ## Contributors
 Al progetto hanno partecipato:
 
-<a href="https://github.com/Zimuch/CalendarioLavorativo/graphs/contributors">
-<img src="https://contrib.rocks/image?repo=Zimuch/CalendarioLavorativo" />
+<a href="https://github.com/Zimuch/Calendario-Lavorativo/graphs/contributors">
+<img src="https://contrib.rocks/image?repo=Zimuch/Calendario-Lavorativo" />
 </a>
